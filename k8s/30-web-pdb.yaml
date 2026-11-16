@@ -1,0 +1,13 @@
+# PodDisruptionBudget: limita interrupções VOLUNTÁRIAS (kubectl drain, upgrade de
+# nós). A API de eviction recusa remover um pod se isso deixar menos de 3 prontos.
+# Não protege contra falhas involuntárias (nó que cai), para isso servem as réplicas.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: web
+  namespace: demo
+spec:
+  minAvailable: 3
+  selector:
+    matchLabels:
+      app: web

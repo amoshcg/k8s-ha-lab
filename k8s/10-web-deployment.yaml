@@ -1,0 +1,111 @@
+# O "estado desejado" da aplicação. O Deployment controller (dentro do
+# kube-controller-manager) cria um ReplicaSet por versão do template, e o
+# ReplicaSet controller garante que existam `replicas` pods. O kube-scheduler
+# escolhe um nó para cada pod novo; o kubelet do nó o executa e roda as probes.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web
+  namespace: demo
+  labels:
+    app: web
+  annotations:
+    kubernetes.io/change-cause: "v1: versão inicial"
+spec:
+  replicas: 4
+  revisionHistoryLimit: 10        # quantas versões antigas ficam guardadas para rollback
+  progressDeadlineSeconds: 60     # sem progresso por 60 s => Progressing=False (ProgressDeadlineExceeded)
+  minReadySeconds: 3              # um pod novo precisa ficar pronto por 3 s antes de contar como disponível
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1                 # sobe no máximo 1 pod extra durante a troca...
+      maxUnavailable: 0           # ...e nunca derruba um pod antigo antes de o novo estar pronto
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      terminationGracePeriodSeconds: 30
+      # Espalha as réplicas entre os nós: a queda de um nó leva no máximo
+      # metade delas. "ScheduleAnyway" = preferência (pontuação no scheduler),
+      # não regra rígida (filtro).
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app: web
+      # ATENÇÃO, valor reduzido para caber na demonstração. Quando um nó para de
+      # responder, o node lifecycle controller aplica o taint
+      # node.kubernetes.io/unreachable:NoExecute. Pods sem esta tolerância
+      # recebem do apiserver o padrão de 300 s antes de serem despejados.
+      tolerations:
+        - key: node.kubernetes.io/unreachable
+          operator: Exists
+          effect: NoExecute
+          tolerationSeconds: 30
+        - key: node.kubernetes.io/not-ready
+          operator: Exists
+          effect: NoExecute
+          tolerationSeconds: 30
+      containers:
+        - name: app
+          image: k8slab/web:v1
+          imagePullPolicy: IfNotPresent   # a imagem é carregada nos nós com "kind load"
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: STARTUP_DELAY         # simula aquecimento (ex.: JVM/Spring Boot)
+              value: "3s"
+            - name: SHUTDOWN_DELAY        # tempo atendendo após SIGTERM, enquanto o Service a remove
+              value: "5s"
+            - name: POD_NAME              # Downward API: a app sabe quem ela é...
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: NODE_NAME             # ...e em qual nó o scheduler a colocou
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          resources:
+            requests:                     # o que o scheduler usa para decidir onde cabe
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
+          # startupProbe: dá até 30 s para a app subir; enquanto não passa, as
+          # outras probes nem começam (evita matar uma app lenta para iniciar).
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 1
+            failureThreshold: 30
+          # readinessProbe: "posso receber tráfego?". Se falhar, o pod sai dos
+          # endpoints do Service, mas NÃO é reiniciado.
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 2
+            timeoutSeconds: 1
+            failureThreshold: 2
+          # livenessProbe: "o processo está saudável?". Se falhar 3 vezes
+          # seguidas, o kubelet mata e reinicia o contêiner.
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 3
+            timeoutSeconds: 1
+            failureThreshold: 3

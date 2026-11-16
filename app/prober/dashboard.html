@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sonda de disponibilidade</title>
+<style>
+  :root {
+    --bg: #0e1116; --panel: #161b22; --line: #2a313c; --text: #e6edf3; --muted: #8b949e;
+    --up: #2ea043; --degraded: #d29922; --down: #e5484d; --unknown: #6e7681;
+    --mark: #58a6ff; --api-ok: #8b93a7;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { display: flex; flex-wrap: wrap; gap: 8px 24px; align-items: baseline;
+           padding: 16px 24px; border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  header .meta { color: var(--muted); font-family: var(--mono); font-size: 13px; }
+  #conn { margin-left: auto; font-size: 13px; color: var(--muted); }
+  #conn.bad { color: var(--down); font-weight: 600; }
+  main { padding: 16px 24px 32px; display: grid; gap: 16px; }
+  .lane { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  .lane-head { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
+  .lane-title { font-size: 16px; font-weight: 600; }
+  .lane-target { color: var(--muted); font-family: var(--mono); font-size: 12px; }
+  .status { font-weight: 700; letter-spacing: .04em; padding: 6px 14px; border-radius: 999px;
+            font-size: 15px; color: #fff; min-width: 150px; text-align: center; }
+  .status.up { background: var(--up); } .status.degraded { background: var(--degraded); }
+  .status.down { background: var(--down); animation: pulse 1s infinite; }
+  .status.unknown { background: var(--unknown); }
+  @keyframes pulse { 50% { opacity: .55; } }
+  .stats { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-left: auto; font-family: var(--mono); font-size: 13px; }
+  .stats b { font-size: 17px; color: var(--text); }
+  .stats span { color: var(--muted); }
+  canvas { width: 100%; height: 86px; display: block; margin-top: 14px; border-radius: 6px; background: #0b0e13; }
+  .axis { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; font-family: var(--mono); margin-top: 4px; }
+  .grid { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; margin-top: 14px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } .stats { margin-left: 0; } }
+  h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 6px; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 13px; }
+  td, th { padding: 4px 8px 4px 0; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { color: var(--muted); font-weight: 500; }
+  td.num, th.num { text-align: right; }
+  .chip { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .empty { color: var(--muted); font-size: 13px; }
+  .inc-open { color: var(--down); font-weight: 600; }
+  .err { color: var(--down); }
+  #marks { font-family: var(--mono); font-size: 13px; }
+  #marks div { padding: 2px 0; }
+  #marks .t { color: var(--mark); margin-right: 10px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Sonda de disponibilidade</h1>
+  <div class="meta" id="meta">—</div>
+  <div id="conn">conectando…</div>
+</header>
+<main>
+  <div id="lanes"></div>
+  <section class="lane">
+    <h3>Marcas (falhas injetadas) na janela</h3>
+    <div id="marks" class="empty">nenhuma</div>
+  </section>
+</main>
+<script>
+const FIXED = { v1: "#4c8df6", v2: "#3fbf7f", v3: "#f2a33a", v4: "#b37feb" };
+const EXTRA = ["#2fb6c4", "#e86fb0", "#c9d26b", "#8f9cf7"];
+const STATUS = { up: "NO AR", degraded: "DEGRADADO", down: "FORA DO AR", unknown: "SEM DADOS" };
+const css = getComputedStyle(document.documentElement);
+const C = n => css.getPropertyValue(n).trim();
+let extraIdx = 0;
+function versionColor(v, lane) {
+  if (lane === "api") return C("--api-ok");
+  if (!v) return C("--unknown");
+  if (!FIXED[v]) FIXED[v] = EXTRA[extraIdx++ % EXTRA.length];
+  return FIXED[v];
+}
+const fmtTime = ms => new Date(ms).toLocaleTimeString("pt-BR", { hour12: false }) + "." + String(ms % 1000).padStart(3, "0");
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function laneShell(l) {
+  const el = document.createElement("section");
+  el.className = "lane"; el.id = "lane-" + l.name;
+  el.innerHTML = `
+    <div class="lane-head">
+      <div class="status unknown" data-k="status">SEM DADOS</div>
+      <div><div class="lane-title">${esc(l.title)}</div><div class="lane-target">${esc(l.target)}</div></div>
+      <div class="stats" data-k="stats"></div>
+    </div>
+    <canvas data-k="canvas"></canvas>
+    <div class="axis"><span data-k="axis-l"></span><span>agora</span></div>
+    <div class="legend" data-k="legend"></div>
+    <div class="grid">
+      <div data-k="pods-wrap"><h3>Quem respondeu nos últimos 5 s</h3><div data-k="pods"></div></div>
+      <div><h3>Incidentes</h3><div data-k="incidents"></div></div>
+    </div>`;
+  if (l.name !== "app") el.querySelector('[data-k="pods-wrap"]').innerHTML =
+    `<h3>O que é medido</h3><div class="empty">Uma escrita (PATCH num ConfigMap) a cada intervalo. Toda escrita precisa de confirmação da maioria dos membros do etcd.</div>`;
+  return el;
+}
+
+function draw(canvas, lane, state) {
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.clientWidth, H = canvas.clientHeight;
+  if (canvas.width !== W * dpr || canvas.height !== H * dpr) { canvas.width = W * dpr; canvas.height = H * dpr; }
+  const g = canvas.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, W, H);
+  const t0 = state.now - state.window_ms;
+  const x = t => (t - t0) / state.window_ms * W;
+  const rs = lane.recent || [];
+  let step = W / Math.max(rs.length, 1);
+  if (rs.length > 1) step = Math.max(1, (x(rs[rs.length - 1].t) - x(rs[0].t)) / (rs.length - 1));
+  const bw = Math.max(1, step * 0.85);
+  for (const s of rs) {
+    g.fillStyle = s.ok ? versionColor(s.v, lane.name) : C("--down");
+    const h = s.ok ? H * 0.72 : H;
+    g.fillRect(x(s.t) - bw, H - h, bw, h);
+  }
+  g.font = "11px ui-monospace, Menlo, monospace";
+  const rowEnd = [-Infinity, -Infinity, -Infinity]; // evita sobrepor rótulos de marcas próximas
+  for (const m of state.marks || []) {
+    const mx = x(m.t);
+    g.strokeStyle = C("--mark"); g.setLineDash([4, 3]); g.lineWidth = 1.5;
+    g.beginPath(); g.moveTo(mx, 0); g.lineTo(mx, H); g.stroke(); g.setLineDash([]);
+    const label = m.label.length > 40 ? m.label.slice(0, 39) + "…" : m.label;
+    const tw = g.measureText(label).width;
+    const lx = Math.max(2, Math.min(mx + 4, W - tw - 4));
+    let row = rowEnd.findIndex(end => lx > end + 6);
+    if (row < 0) row = rowEnd.indexOf(Math.min(...rowEnd));
+    rowEnd[row] = lx + tw;
+    g.fillStyle = "rgba(11,14,19,.85)"; g.fillRect(lx - 2, 2 + row * 14, tw + 4, 13);
+    g.fillStyle = C("--mark"); g.fillText(label, lx, 12 + row * 14);
+  }
+}
+
+function render(state) {
+  const host = document.getElementById("lanes");
+  const elapsed = Math.round((state.now - state.started) / 1000);
+  document.getElementById("meta").textContent =
+    `início ${fmtTime(state.started).slice(0, 8)} · ${Math.floor(elapsed / 60)}m${String(elapsed % 60).padStart(2, "0")}s de medição`;
+  for (const l of state.lanes) {
+    let el = document.getElementById("lane-" + l.name);
+    if (!el) { el = laneShell(l); host.appendChild(el); }
+    const q = k => el.querySelector(`[data-k="${k}"]`);
+    const st = q("status"); st.className = "status " + l.status; st.textContent = STATUS[l.status];
+    q("stats").innerHTML = `
+      <div><span>disponibilidade </span><b>${l.availability.toFixed(3)}%</b></div>
+      <div><span>req </span><b>${l.total}</b></div>
+      <div><span>falhas </span><b class="${l.total - l.ok ? "err" : ""}">${l.total - l.ok}</b></div>
+      <div><span>p50/p95/p99 </span><b>${l.p50}</b>/<b>${l.p95}</b>/<b>${l.p99}</b><span> ms</span></div>`;
+    q("axis-l").textContent = `−${Math.round(state.window_ms / 1000)} s`;
+    draw(q("canvas"), l, state);
+
+    const vs = [...new Set((l.recent || []).filter(s => s.ok && s.v).map(s => s.v))].sort();
+    q("legend").innerHTML = (l.name === "app" ? vs.map(v => `<span><i class="chip" style="background:${versionColor(v)}"></i>${esc(v)} ok</span>`).join("") : `<span><i class="chip" style="background:${C("--api-ok")}"></i>escrita ok</span>`)
+      + `<span><i class="chip" style="background:${C("--down")}"></i>falha</span><span><i class="chip" style="background:${C("--mark")}"></i>marca</span>`;
+
+    if (l.name === "app") {
+      const pods = l.pods || [];
+      q("pods").innerHTML = pods.length ? `<table><tr><th>pod</th><th>nó</th><th>versão</th><th class="num">req</th><th class="num">erros</th></tr>` +
+        pods.map(p => `<tr><td>${esc(p.pod)}</td><td>${esc(p.node)}</td><td><i class="chip" style="background:${versionColor(p.version)}"></i>${esc(p.version)}</td><td class="num">${p.count}</td><td class="num ${p.errors ? "err" : ""}">${p.errors}</td></tr>`).join("") + `</table>`
+        : `<div class="empty">nenhum pod respondeu</div>`;
+    }
+    const inc = (l.incidents || []).slice().reverse();
+    const lastErr = [...(l.recent || [])].reverse().find(s => !s.ok);
+    q("incidents").innerHTML = (inc.length ? `<table><tr><th>início</th><th class="num">duração</th><th class="num">falhas</th></tr>` +
+      inc.map(i => `<tr><td>${fmtTime(i.start)}</td><td class="num ${i.open ? "inc-open" : ""}">${i.dur.toFixed(2)} s${i.open ? " …" : ""}</td><td class="num">${i.fails}/${i.total}</td></tr>`).join("") + `</table>`
+      : `<div class="empty">nenhum incidente desde o início</div>`)
+      + (lastErr ? `<div class="empty" style="margin-top:8px">último erro: <span class="err">${esc(lastErr.err)}</span></div>` : "");
+  }
+  const mk = document.getElementById("marks");
+  const marks = (state.marks || []).slice().reverse();
+  mk.className = marks.length ? "" : "empty";
+  mk.innerHTML = marks.length ? marks.map(m => `<div><span class="t">${fmtTime(m.t)}</span>${esc(m.label)}</div>`).join("") : "nenhuma";
+}
+
+async function tick() {
+  const conn = document.getElementById("conn");
+  try {
+    const r = await fetch("/api/state", { cache: "no-store" });
+    render(await r.json());
+    conn.textContent = "atualizado " + new Date().toLocaleTimeString("pt-BR", { hour12: false }); conn.className = "";
+  } catch (e) {
+    conn.textContent = "sonda desconectada"; conn.className = "bad";
+  }
+}
+tick(); setInterval(tick, 500);
+</script>
+</body>
+</html>

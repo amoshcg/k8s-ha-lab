@@ -1,0 +1,25 @@
+# Regra rígida (required): só nós com o rótulo disco=ssd passam no filtro NodeAffinity.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: precisa-ssd
+  namespace: demo
+  labels:
+    demo: scheduler
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: disco
+                operator: In
+                values: ["ssd"]
+  containers:
+    - name: app
+      image: k8slab/web:v1
+      imagePullPolicy: IfNotPresent
+      resources:
+        requests:
+          cpu: 50m
+          memory: 32Mi

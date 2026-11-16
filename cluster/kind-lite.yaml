@@ -1,0 +1,16 @@
+# Variante leve para máquinas com pouca memória (menos de ~8 GB livres).
+# Um único control plane: os experimentos de rollout, rollback, probes, falha de
+# worker e drain funcionam; os de etcd (eleição, quórum) e de failover de
+# líderes NÃO, porque só existe um membro de cada componente.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: k8slab
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      - containerPort: 30080
+        hostPort: 8080
+        listenAddress: "127.0.0.1"
+  - role: worker
+  - role: worker
+  - role: worker

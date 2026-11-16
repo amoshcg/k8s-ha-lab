@@ -1,0 +1,43 @@
+# Usado pela pista "api" da sonda: a cada 500 ms ela faz um PATCH neste
+# ConfigMap. Toda escrita na API vira uma escrita no etcd, que só é confirmada
+# quando a maioria dos membros (2 de 3) grava, então essa pista mede a
+# disponibilidade do plano de controle.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api-heartbeat
+  namespace: demo
+data:
+  ts: ""
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: api-prober
+  namespace: demo
+---
+# Permissão mínima: só ler e alterar este ConfigMap específico.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: api-prober
+  namespace: demo
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["api-heartbeat"]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: api-prober
+  namespace: demo
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: api-prober
+subjects:
+  - kind: ServiceAccount
+    name: api-prober
+    namespace: demo
