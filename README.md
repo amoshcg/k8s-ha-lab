@@ -76,8 +76,7 @@ volta a aplicação para a v1. `make down` apaga tudo.
 4. [Experimentos de alta disponibilidade](docs/04-alta-disponibilidade.md): demos 1 a 7
 5. [Experimentos do plano de controle](docs/05-plano-de-controle.md): demos 8 a 10
 6. [Métricas para o relatório](docs/06-metricas.md): como medir, repetir e analisar
-7. [Roteiro da demonstração ao vivo](docs/07-roteiro-demo.md): 5 a 10 minutos de seminário
-8. [Solução de problemas](docs/08-problemas.md)
+7. [Solução de problemas](docs/07-problemas.md)
 
 ## Estrutura do repositório
 

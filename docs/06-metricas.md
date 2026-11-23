@@ -96,4 +96,4 @@ Lembre no relatório: os números absolutos refletem um notebook com 6 "nós" no
 Docker. O que vale comparar são as **relações** (com × sem probes, padrão × ajustado,
 falha graciosa × abrupta).
 
-Próximo: [7. Roteiro da demonstração ao vivo](07-roteiro-demo.md)
+Próximo: [7. Solução de problemas](07-problemas.md)

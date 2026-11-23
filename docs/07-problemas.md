@@ -1,4 +1,4 @@
-# 8. Solução de problemas
+# 7. Solução de problemas
 
 | Sintoma | Causa provável | Solução |
 |---|---|---|
