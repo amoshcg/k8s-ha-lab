@@ -184,6 +184,12 @@ etcd_leader_node() {
   return 1
 }
 
+# Nó que detém a Lease de liderança (kube-scheduler ou kube-controller-manager).
+lease_holder() {
+  kubectl -n kube-system get lease "$1" --request-timeout=3s \
+    -o jsonpath='{.spec.holderIdentity}' 2>/dev/null | cut -d_ -f1
+}
+
 # --- Aplicação ------------------------------------------------------------------------
 # Worker com mais pods da aplicação (o alvo mais "doloroso" para derrubar).
 busiest_worker() {
