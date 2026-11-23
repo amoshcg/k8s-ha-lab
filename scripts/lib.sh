@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2034 # variáveis usadas pelos scripts que fazem "source" deste arquivo
 # Funções e variáveis comuns a todos os scripts do laboratório.
-# Compatível com o bash 3.2 do macOS (sem arrays associativos, sem mapfile).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -18,7 +17,7 @@ PROBER_CONTAINER="${CLUSTER}-prober"
 ENTRY_NODE="${CLUSTER}-control-plane"   # nó com a porta 8080 mapeada; não é derrubado nos experimentos
 
 # Todo kubectl dos scripts aponta explicitamente para o cluster do laboratório,
-# mesmo que o seu kubeconfig tenha outros contextos (RKE2, EKS, ...).
+# mesmo que o seu kubeconfig tenha outros contextos.
 kubectl() { command kubectl --context "$KCTX" "$@"; }
 
 if [[ -t 1 && -z "${NO_COLOR:-}" ]]; then

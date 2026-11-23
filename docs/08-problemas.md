@@ -12,11 +12,11 @@
 | depois de reiniciar o computador ou o Docker, o cluster não volta | contêineres do kind voltam com outros IPs; cluster com vários nós não se recupera | `make down && make up` (por isso as falhas usam `docker pause`, nunca `docker stop`) |
 | `kubectl` trava ou dá timeout depois de uma demo | algum componente ficou congelado/parado | `make reset`; conferir com `make status` |
 | `make status` mostra todos os membros do etcd como SEM RESPOSTA | `etcdctl` não foi copiado para os nós | `scripts/cluster.sh up` (com o cluster existente, só reinstala o etcdctl) |
-| `chaos/no.sh latency` falha com *Specified qdisc kind is unknown* | kernel da VM do Docker (macOS/Windows) sem `sch_netem` | experimento opcional; use Linux nativo ou uma VM Linux |
+| `chaos/no.sh latency` falha com *Specified qdisc kind is unknown* | kernel da VM do Docker (Windows) sem `sch_netem` | experimento opcional; use Linux nativo ou uma VM Linux |
 | sonda: *permission denied* ao gravar em `results/` | dono da pasta diferente do seu usuário | `sudo chown -R "$USER" results` |
 | pista `api` sempre falhando com HTTP 401 | token da sonda expirou (24 h) | reinicie a sonda (`make probe` gera um token novo) |
 | scripts com `$'\r': command not found` | arquivos com final de linha do Windows | clone dentro do WSL e use `git config --global core.autocrlf input` |
-| `kubectl` dos seus outros clusters (RKE2, EKS) mudou de contexto | o kind define `kind-k8slab` como atual | `kubectl config use-context <o-seu>`; os scripts do laboratório sempre usam `--context kind-k8slab` |
+| `kubectl` dos seus outros clusters mudou de contexto | o kind define `kind-k8slab` como atual | `kubectl config use-context <o-seu>`; os scripts do laboratório sempre usam `--context kind-k8slab` |
 
 ## Comandos de diagnóstico
 
