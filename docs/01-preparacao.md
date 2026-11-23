@@ -8,11 +8,9 @@ Você vai precisar de:
 | kind | v0.31.0 | cria o cluster Kubernetes dentro do Docker |
 | kubectl | v1.35.x | cliente da API do Kubernetes |
 | make, curl, bash | — | atalhos e scripts |
-| Python 3 + matplotlib | opcional | análise dos resultados e gráficos |
 
 **Recursos:** o cluster completo (6 nós) usa ~5–6 GB de RAM. Reserve 8 GB livres e 4
-CPUs. Com menos, use a variante leve (`make lite`, 4 nós), que não permite os
-experimentos de etcd e eleição de líderes.
+CPUs.
 
 ---
 
@@ -34,7 +32,7 @@ curl -LO "https://dl.k8s.io/release/v1.35.0/bin/linux/${ARCH}/kubectl"
 chmod +x kubectl && sudo mv kubectl /usr/local/bin/
 
 # utilitários
-sudo apt-get install -y make curl python3-matplotlib
+sudo apt-get install -y make curl
 ```
 
 ## macOS
@@ -47,7 +45,6 @@ sudo apt-get install -y make curl python3-matplotlib
    brew install kind kubectl
    xcode-select --install   # traz make, se ainda não tiver
    ```
-3. Opcional: `pip3 install matplotlib`.
 
 Os scripts funcionam com o bash 3.2 que vem no macOS.
 

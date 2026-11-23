@@ -76,7 +76,7 @@ docker exec k8slab-control-plane crictl ps     # contêineres rodando dentro do 
 ```
 
 Tirar um desses arquivos da pasta faz o kubelet encerrar o componente. Devolver faz o
-kubelet recriá-lo. É assim que `chaos/componente.sh stop|start` funciona.
+kubelet recriá-lo.
 
 ## 2.4 etcd e o consenso Raft
 
@@ -113,7 +113,7 @@ Por isso o número de membros é ímpar: 4 membros toleram as mesmas 1 falha que
 > Nesta topologia (*stacked etcd*, padrão do kubeadm), cada kube-apiserver conversa
 > **só com o etcd do próprio nó** (`--etcd-servers=https://127.0.0.1:2379`). Se o etcd
 > de um nó para, o apiserver daquele nó também deixa de funcionar, e o HAProxy precisa
-> tirá-lo do balanceamento. A demo 10 mostra esse efeito.
+> tirá-lo do balanceamento.
 
 ## 2.5 Eleição de líder com Lease
 
@@ -145,7 +145,7 @@ O **node lifecycle controller** (no kube-controller-manager) vigia essas Leases.
 passa do `node-monitor-grace-period` (50 s por padrão) sem renovar, ele é marcado como
 `Unknown`, recebe o taint `node.kubernetes.io/unreachable` e seus pods deixam de ser
 considerados prontos. É um **detector de falhas por timeout**: não distingue um nó morto
-de um nó lento ou isolado na rede. A demo 6 mede esse tempo.
+de um nó lento ou isolado na rede.
 
 ## 2.7 O caminho de um `kubectl apply`
 

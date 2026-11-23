@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Cria (up) ou destrói (down) o cluster kind do laboratório.
-#   scripts/cluster.sh up      KIND_CONFIG=cluster/kind-lite.yaml scripts/cluster.sh up
+#   scripts/cluster.sh up
 #   scripts/cluster.sh down
 source "$(dirname "$0")/lib.sh"
 

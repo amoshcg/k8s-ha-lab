@@ -117,7 +117,7 @@ make probe                 # ou: make probe LABEL=falha-de-no
   quem é o líder do scheduler e do controller-manager. Com um nó congelado, a visão
   "de fora" fica vermelha em ~1 s, enquanto a API só o marca `NotReady` dezenas de
   segundos depois. Mudanças de estado também aparecem no terminal (`◆ [nó] ...`).
-- **Marcas:** todo script de `chaos/` e `demos/` registra uma marca na sonda no momento
+- **Marcas:** todo script de `chaos/` e a apresentação registram uma marca na sonda no momento
   em que injeta a falha (linha tracejada no painel). Para marcar à mão:
   `curl "localhost:8090/api/mark?label=meu+evento"`.
 - **Ctrl+C:** imprime e salva o resumo (`results/<rótulo>_<data>_resumo.txt`), com o
@@ -130,9 +130,9 @@ make probe                 # ou: make probe LABEL=falha-de-no
 │ T1: make probe               │ navegador: localhost:8090    │
 │ (linhas por segundo)         │ (painel)                     │
 ├──────────────────────────────┼──────────────────────────────┤
-│ T2: make watch               │ T3: ./demos/NN-....sh        │
+│ T2: make watch               │ T3: demos/00-apresentacao.sh │
 │ (nós, ReplicaSets, pods)     │ (onde você executa)          │
 └──────────────────────────────┴──────────────────────────────┘
 ```
 
-Próximo: [4. Experimentos de alta disponibilidade](04-alta-disponibilidade.md)
+Próximo: [4. Solução de problemas](04-problemas.md)

@@ -45,8 +45,8 @@ try_sh() {
   eval "$1" || printf '%s(o comando terminou com erro %s)%s\n' "$D" "$?" "$N"
 }
 
-# --- Roteiro das demos -------------------------------------------------------
-# AUTO=1 dispensa o Enter entre os passos (útil para repetir experimentos).
+# --- Roteiro da apresentação ---------------------------------------------------
+# AUTO=1 dispensa o Enter entre os passos.
 step()  { printf '\n%s━━━ %s ━━━%s\n' "$B$C" "$*" "$N"; }
 say()   { printf '%s%s%s\n' "$Y" "$*" "$N"; }
 pause() {
@@ -184,35 +184,7 @@ etcd_leader_node() {
   return 1
 }
 
-# Nó que detém a Lease de liderança (kube-scheduler ou kube-controller-manager).
-lease_holder() {
-  kubectl -n kube-system get lease "$1" --request-timeout=3s \
-    -o jsonpath='{.spec.holderIdentity}' 2>/dev/null | cut -d_ -f1
-}
-
-# Resolve "lider" para o nó líder do componente; senão devolve o próprio argumento.
-resolve_node() {
-  local comp=$1 node=$2
-  if [[ "$node" == "lider" || "$node" == "líder" ]]; then
-    case "$comp" in
-      etcd) node=$(etcd_leader_node) || die "não consegui descobrir o líder do etcd" ;;
-      kube-scheduler | kube-controller-manager)
-        node=$(lease_holder "$comp") ; [[ -n "$node" ]] || die "não consegui ler a Lease $comp (API fora do ar?)" ;;
-      *) die "'lider' só vale para etcd, kube-scheduler e kube-controller-manager" ;;
-    esac
-  fi
-  require_node "$node"
-  echo "$node"
-}
-
 # --- Aplicação ------------------------------------------------------------------------
-app_pods() {
-  kubectl -n "$NS" get pods -l app=web --field-selector=status.phase=Running \
-    -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}'
-}
-pod_node() { kubectl -n "$NS" get pod "$1" -o jsonpath='{.spec.nodeName}'; }
-# Chama um endpoint de um pod específico através do proxy do kube-apiserver.
-pod_call() { kubectl get --raw "/api/v1/namespaces/$NS/pods/$1:8080/proxy$2"; }
 # Worker com mais pods da aplicação (o alvo mais "doloroso" para derrubar).
 busiest_worker() {
   kubectl -n "$NS" get pods -l app=web -o jsonpath='{range .items[*]}{.spec.nodeName}{"\n"}{end}' |

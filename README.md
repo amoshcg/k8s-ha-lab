@@ -6,20 +6,15 @@ computador com [kind](https://kind.sigs.k8s.io/), uma aplicação de demonstraç
 Kubernetes mantém um serviço no ar quando pods, processos, nós e o próprio plano de
 controle falham, e durante rollouts e rollbacks.
 
-O que dá para demonstrar:
+A apresentação (`demos/00-apresentacao.sh`, ~8 min) tem 5 passos:
 
-| # | Demo | Conceito de sistemas distribuídos | Resultado esperado na sonda |
-|---|------|-----------------------------------|-----------------------------|
-| 1 | [Reconciliação](demos/01-reconciliacao.sh) | laço de controle, estado desejado × atual | apagar/escalar pods: 0 falhas |
-| 2 | [Probes](demos/02-probes.sh) | detecção de falhas (readiness × liveness) | segundos de erro só no pod que trava |
-| 3 | [Rollout](demos/03-rollout.sh) | atualização sem parada | v1 → v2 com 0 falhas |
-| 4 | [Rollback](demos/04-rollback.sh) | contenção de defeito, histórico de versões | v3 quebrada não derruba nada; `rollout undo` |
-| 5 | [Sem probes](demos/05-sem-probes.sh) | contraste | erros no rollout e queda total com a v3 |
-| 6 | [Falha de nó](demos/06-falha-de-no.sh) | detector de falhas por heartbeat/lease, timeouts | erros parciais por ~50 s, depois recupera |
-| 7 | [Drain](demos/07-drain.sh) | manutenção planejada, PodDisruptionBudget | 0 falhas |
-| 8 | [Scheduler](demos/08-scheduler.sh) | alocação de recursos (filtros e pontuação) | — |
-| 9 | [Líderes](demos/09-lideres.sh) | eleição de líder com Lease | troca de líder em ~15–20 s |
-| 10 | [etcd](demos/10-etcd.sh) | consenso Raft, quórum, CAP | API cai sem quórum; a aplicação continua no ar |
+| # | Passo | Conceito de sistemas distribuídos | Resultado esperado na sonda |
+|---|-------|-----------------------------------|-----------------------------|
+| 1 | O cluster | componentes do plano de controle, etcd, líderes | — |
+| 2 | Rollout v1 → v2 | atualização sem parada (readiness probe) | 0 falhas |
+| 3 | v3 com defeito e rollback | contenção de defeito, histórico de versões | v3 quebrada não derruba nada; `rollout undo` |
+| 4 | Um worker cai | detector de falhas por heartbeat, timeouts | erros parciais, depois recupera |
+| 5 | O etcd perde o quórum | consenso Raft, quórum, CAP | API cai; a aplicação continua no ar |
 
 ## Arquitetura
 
@@ -61,34 +56,30 @@ Pré-requisitos: Docker, kind ≥ 0.31, kubectl, make, curl e cerca de 8 GB de R
 ```bash
 make up        # cria o cluster, constrói as imagens e implanta a aplicação (~5 min)
 make probe     # em OUTRO terminal: sonda + painel em http://localhost:8090
+scripts/deteccao.sh 20s   # opcional: detecta a queda de um nó em ~20 s em vez de ~50 s
 make watch     # em um terceiro terminal (opcional): pods e nós ao vivo
-./demos/03-rollout.sh
+./demos/00-apresentacao.sh
 ```
 
-Depois de cada experimento, `make reset` desfaz as falhas injetadas e `make reset-app`
-volta a aplicação para a v1. `make down` apaga tudo.
+Para repetir a apresentação, `make reset-app` desfaz as falhas e volta a aplicação para
+a v1. `make down` apaga tudo.
 
 ## Guia passo a passo
 
 1. [Preparação do ambiente](docs/01-preparacao.md): instalar e verificar as ferramentas
 2. [O cluster por dentro](docs/02-cluster.md): o que foi criado e como cada componente funciona
 3. [Aplicação e sonda](docs/03-aplicacao-e-sonda.md): probes, imagens, implantação e painel
-4. [Experimentos de alta disponibilidade](docs/04-alta-disponibilidade.md): demos 1 a 7
-5. [Experimentos do plano de controle](docs/05-plano-de-controle.md): demos 8 a 10
-6. [Métricas para o relatório](docs/06-metricas.md): como medir, repetir e analisar
-7. [Solução de problemas](docs/07-problemas.md)
+4. [Solução de problemas](docs/04-problemas.md)
 
 ## Estrutura do repositório
 
 ```
 app/            código da aplicação (web) e da sonda (prober), em Go, e o Dockerfile
-cluster/        configuração do kind: kind-ha.yaml (3+3 nós) e kind-lite.yaml (1+3)
+cluster/        configuração do kind (kind-ha.yaml: 3 control planes + 3 workers)
 k8s/            manifestos: Namespace, Deployment, Service, PodDisruptionBudget, RBAC da sonda
-demos/          demos guiadas (explicam, executam e esperam Enter); 00-apresentacao.sh é o roteiro do seminário
-chaos/          injeção de falhas: no.sh (nós), componente.sh (plano de controle), pod.sh
-scripts/        criação do cluster, imagens, deploy, sonda, status, watch, repetição, carga, detecção
-bench/          carga.js: teste de carga do k6 (vazão e latência)
-analysis/       analisa.py: tabelas em Markdown e gráfico a partir do CSV da sonda
+demos/          00-apresentacao.sh, o roteiro da apresentação (explica, executa e espera Enter)
+chaos/          injeção de falhas: no.sh (nós), componente.sh (etcd), restaura.sh
+scripts/        criação do cluster, imagens, deploy, sonda, status, watch, detecção
 results/        CSVs e resumos gerados pela sonda (fora do git)
 docs/           o guia passo a passo
 ```
@@ -98,10 +89,10 @@ docs/           o guia passo a passo
 | Requisito | Onde |
 |---|---|
 | ≥ 3 nós/processos comunicando-se via rede | 6 nós (contêineres) na rede Docker `kind`; etcd com 3 membros em Raft |
-| cenário de falha demonstrado | 10 demos: pod, processo, nó (travamento e partição), latência, líderes, etcd e quórum |
+| cenário de falha demonstrado | rollout com versão defeituosa, queda de nó e perda de quórum do etcd |
 | comportamento do sistema diante da falha | sonda externa com painel, CSV, marcas de injeção e resumo automático |
 | execução reprodutível | `make up` (cria tudo do zero, com versões fixadas: kind v0.31.0, Kubernetes v1.35.0) |
-| métricas | disponibilidade, detecção, recuperação, latência p50/p95/p99 e vazão (k6): [docs/06-metricas.md](docs/06-metricas.md) |
+| métricas | disponibilidade da aplicação e da API, versão que respondeu, incidentes e duração, no painel e no CSV da sonda |
 
 > O enunciado pede "preferencialmente `docker compose up`". Um cluster kind é criado
 > pelo próprio `kind` (que conversa com o Docker), por isso a entrada única aqui é
@@ -112,7 +103,7 @@ docs/           o guia passo a passo
 | Plataforma | Situação |
 |---|---|
 | Linux (x86_64/arm64) com Docker Engine | suportado (ambiente de referência) |
-| macOS (Intel/Apple Silicon) com Docker Desktop, OrbStack ou Colima | suportado; `chaos/no.sh latency` depende do kernel da VM |
+| macOS (Intel/Apple Silicon) com Docker Desktop, OrbStack ou Colima | suportado |
 | Windows 10/11 com Docker Desktop + WSL2 | rode os comandos dentro do Ubuntu do WSL2 |
 
 ## Limitações

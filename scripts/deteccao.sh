@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Ajusta o tempo que o node lifecycle controller espera antes de declarar um nó
 # inacessível (--node-monitor-grace-period do kube-controller-manager). Serve para
-# o experimento "parâmetro × tempo de detecção" (docs/06-metricas.md).
+# a apresentação: com 20s, a queda de um nó é detectada em ~20 s em vez de ~50 s.
 #
 #   scripts/deteccao.sh 20s       detecção mais rápida (mais risco de falso positivo)
 #   scripts/deteccao.sh padrao    remove o ajuste (volta ao padrão, 50 s)
