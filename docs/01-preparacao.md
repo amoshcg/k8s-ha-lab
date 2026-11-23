@@ -79,27 +79,4 @@ Use o **WSL2**: todos os comandos rodam dentro do Ubuntu do WSL.
 5. Clone o repositório **dentro do sistema de arquivos do Linux** (`~/`), não em
    `/mnt/c/...`: é muito mais rápido e evita problemas de permissão.
 
-## Nuvem (plano B para a apresentação)
-
-Uma VM Linux com 2–4 vCPU e 8 GB (por exemplo, EC2 `m7i-flex.large`) roda o laboratório
-com o mesmo procedimento do Linux. Para ver o painel no seu navegador:
-
-```bash
-ssh -L 8090:localhost:8090 -L 8080:localhost:8080 ubuntu@<ip-da-vm>
-```
-
-## Verificação
-
-```bash
-docker info --format '{{.ServerVersion}} {{.CgroupVersion}}'   # cgroup "2" é o esperado
-kind version
-kubectl version --client
-make help
-```
-
-> **cgroup v1.** Distribuições antigas (por exemplo, Ubuntu 20.04 sem ajustes) usam
-> cgroup v1, que o Kubernetes está abandonando. Se o cluster não subir e o log do
-> kubelet citar cgroup v1, use a imagem 1.34:
-> `NODE_IMAGE=kindest/node:v1.34.3@sha256:08497ee19eace7b4b5348db5c6a1591d7752b164530a36f855cb0f2bdcbadd48 make cluster`
-
 Próximo: [2. O cluster por dentro](02-cluster.md)
