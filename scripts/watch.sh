@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Atualiza a cada segundo: nós, Deployment/ReplicaSets e pods da aplicação.
-# (Equivale a "watch kubectl get ...", sem precisar do comando watch.)
+# (Equivale a "watch kubectl get ...", mas funciona no macOS sem instalar nada.)
 source "$(dirname "$0")/lib.sh"
 require_cluster
 T="--request-timeout=2s"

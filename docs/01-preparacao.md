@@ -47,6 +47,20 @@ printf 'fs.inotify.max_user_watches=524288\nfs.inotify.max_user_instances=512\n'
 sudo sysctl --system
 ```
 
+## macOS
+
+1. Instale o **Docker Desktop** (ou OrbStack, ou Colima). No Docker Desktop, em
+   *Settings → Resources*, dê pelo menos **8 GB de memória e 4 CPUs**.
+   Com Colima: `colima start --cpu 4 --memory 8`.
+2. Ferramentas (com [Homebrew](https://brew.sh)):
+   ```bash
+   brew install kind kubectl
+   xcode-select --install   # traz make, se ainda não tiver
+   ```
+3. Opcional: `pip3 install matplotlib`.
+
+Os scripts funcionam com o bash 3.2 que vem no macOS.
+
 ## Windows 10/11
 
 Use o **WSL2**: todos os comandos rodam dentro do Ubuntu do WSL.

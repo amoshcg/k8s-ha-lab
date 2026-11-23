@@ -113,6 +113,7 @@ docs/           o guia passo a passo
 | Plataforma | Situação |
 |---|---|
 | Linux (x86_64/arm64) com Docker Engine | suportado (ambiente de referência) |
+| macOS (Intel/Apple Silicon) com Docker Desktop, OrbStack ou Colima | suportado; `chaos/no.sh latency` depende do kernel da VM |
 | Windows 10/11 com Docker Desktop + WSL2 | rode os comandos dentro do Ubuntu do WSL2 |
 
 ## Limitações

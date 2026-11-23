@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck disable=SC2034 # variáveis usadas pelos scripts que fazem "source" deste arquivo
 # Funções e variáveis comuns a todos os scripts do laboratório.
+# Compatível com o bash 3.2 do macOS (sem arrays associativos, sem mapfile).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
