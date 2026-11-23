@@ -2,7 +2,6 @@
 
 | Sintoma | Causa provável | Solução |
 |---|---|---|
-| `kind create cluster` trava ou pods do `kube-system` em CrashLoop com *too many open files* | limites de inotify (Linux) | ver [preparação](01-preparacao.md#linux-ubuntudebian); depois `make down && make cluster` |
 | nós `NotReady` logo após criar, contêineres sendo mortos (OOM) | pouca memória para o Docker | Docker Desktop/WSL com ≥ 8 GB, ou `make lite` |
 | kubelet não sobe; log cita cgroup v1 | host com cgroup v1 | `NODE_IMAGE=kindest/node:v1.34.3@sha256:08497ee19eace7b4b5348db5c6a1591d7752b164530a36f855cb0f2bdcbadd48 make cluster` |
 | `port is already allocated` (8080) ao criar o cluster | outra coisa usa a porta 8080 | troque `hostPort` em `cluster/kind-ha.yaml` |

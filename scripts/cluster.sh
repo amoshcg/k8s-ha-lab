@@ -10,18 +10,6 @@ check_prereqs() {
   [[ -z "$missing" ]] || die "faltam programas:$missing (veja docs/01-preparacao.md)"
   docker info >/dev/null 2>&1 || die "o Docker não está rodando (ou seu usuário não tem acesso a ele)"
   info "versões: $(kind version | awk '{print $1, $2}'), kubectl $(command kubectl version --client -o yaml 2>/dev/null | awk '/gitVersion/{print $2; exit}')"
-
-  # Em Linux, clusters com vários nós esgotam facilmente os limites de inotify
-  # (sintoma: pods do kube-system em CrashLoop com "too many open files").
-  if [[ -r /proc/sys/fs/inotify/max_user_watches ]]; then
-    local w i
-    w=$(cat /proc/sys/fs/inotify/max_user_watches)
-    i=$(cat /proc/sys/fs/inotify/max_user_instances)
-    if ((w < 524288 || i < 512)); then
-      warn "limites de inotify baixos (watches=$w, instances=$i). Recomendado:"
-      warn "  sudo sysctl fs.inotify.max_user_watches=524288 fs.inotify.max_user_instances=512"
-    fi
-  fi
 }
 
 up() {

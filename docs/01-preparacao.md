@@ -37,16 +37,6 @@ chmod +x kubectl && sudo mv kubectl /usr/local/bin/
 sudo apt-get install -y make curl python3-matplotlib
 ```
 
-**Limites de inotify.** Clusters kind com vários nós esgotam os limites padrão do Linux
-(sintoma: pods do `kube-system` em CrashLoop com *too many open files*). Ajuste de forma
-permanente:
-
-```bash
-printf 'fs.inotify.max_user_watches=524288\nfs.inotify.max_user_instances=512\n' |
-  sudo tee /etc/sysctl.d/99-kind.conf
-sudo sysctl --system
-```
-
 ## macOS
 
 1. Instale o **Docker Desktop** (ou OrbStack, ou Colima). No Docker Desktop, em
