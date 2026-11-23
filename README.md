@@ -106,7 +106,7 @@ docs/           o guia passo a passo
 
 > O enunciado pede "preferencialmente `docker compose up`". Um cluster kind é criado
 > pelo próprio `kind` (que conversa com o Docker), por isso a entrada única aqui é
-> `make up`. Vale combinar isso com o professor.
+> `make up`.
 
 ## Plataformas
 
