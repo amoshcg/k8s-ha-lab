@@ -61,6 +61,9 @@ type config struct {
 	window   time.Duration
 	quiet    bool
 	noColor  bool
+
+	nodes         string
+	nodesInterval time.Duration
 }
 
 func main() {
@@ -82,6 +85,8 @@ func main() {
 	flag.DurationVar(&c.window, "window", 60*time.Second, "janela de histórico mostrada no painel")
 	flag.BoolVar(&c.quiet, "quiet", false, "não imprime a linha por segundo")
 	flag.BoolVar(&c.noColor, "no-color", false, "desliga cores no terminal")
+	flag.StringVar(&c.nodes, "nodes", "", "nós do cluster separados por vírgula (os demais são descobertos pela API); vazio e sem -api-url desliga o painel de nós")
+	flag.DurationVar(&c.nodesInterval, "nodes-interval", time.Second, "intervalo de verificação dos nós")
 	flag.Parse()
 
 	log.SetFlags(0)
@@ -107,6 +112,21 @@ func main() {
 		}
 		apiLane := p.addLane("api", "API do Kubernetes (plano de controle)", c.apiURL)
 		go p.run(ctx, apiLane, c.apiInterval, check)
+	}
+
+	if c.nodes != "" || c.apiURL != "" {
+		var names []string
+		for _, n := range strings.Split(c.nodes, ",") {
+			if n = strings.TrimSpace(n); n != "" {
+				names = append(names, n)
+			}
+		}
+		nm, err := newNodeMonitor(p, names, c.nodesInterval)
+		if err != nil {
+			log.Fatalf("monitor de nós: %v", err)
+		}
+		p.nodes = nm
+		go nm.run(ctx)
 	}
 
 	if c.listen != "" {
@@ -201,6 +221,8 @@ type prober struct {
 	csvFile *os.File
 	csvW    *csv.Writer
 	csvPath string
+
+	nodes *nodeMonitor
 }
 
 func newProber(c config) *prober { return &prober{cfg: c, started: time.Now()} }
@@ -740,6 +762,7 @@ type jsonState struct {
 	Window  int64      `json:"window_ms"`
 	Lanes   []jsonLane `json:"lanes"`
 	Marks   []jsonMark `json:"marks"`
+	Nodes   *jsonNodes `json:"nodes,omitempty"`
 }
 
 func (p *prober) state() jsonState {
@@ -818,6 +841,9 @@ func (p *prober) state() jsonState {
 		}
 		l.mu.Unlock()
 		st.Lanes = append(st.Lanes, jl)
+	}
+	if p.nodes != nil {
+		st.Nodes = p.nodes.state()
 	}
 	return st
 }

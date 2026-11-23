@@ -98,7 +98,7 @@ Uma requisição é **falha** se não responder 200 em 1 s (`app`) ou 2 s (`api`
 **incidente** começa na primeira falha e termina quando passam 2 s seguidos sem falhas.
 
 A pista `api` usa o token de uma ServiceAccount que só pode alterar aquele ConfigMap
-([`k8s/40-api-heartbeat.yaml`](../k8s/40-api-heartbeat.yaml)).
+([`k8s/40-api-heartbeat.yaml`](../k8s/40-api-heartbeat.yaml)), mais permissão de leitura de nós, static pods e Leases para o painel de nós.
 
 ```bash
 make probe                 # ou: make probe LABEL=falha-de-no
@@ -109,6 +109,14 @@ make probe                 # ou: make probe LABEL=falha-de-no
 - **Painel:** http://localhost:8090, com o estado de cada pista (NO AR / DEGRADADO /
   FORA DO AR), a linha do tempo de 60 s colorida por versão (azul v1, verde v2, laranja
   v3, vermelho falha), quem respondeu nos últimos 5 s e a lista de incidentes.
+- **Nós do cluster** (no painel): um cartão por nó (3 control planes e 3 workers) com
+  duas visões. *De fora*: a sonda faz, a cada 1 s, um handshake TLS no kubelet
+  (`:10250`) de cada nó e um `GET /readyz` direto no kube-apiserver de cada control
+  plane (sem passar pelo HAProxy). *Segundo a API*: condição `Ready`, último heartbeat,
+  static pods do plano de controle (etcd, apiserver, scheduler, controller-manager) e
+  quem é o líder do scheduler e do controller-manager. Com um nó congelado, a visão
+  "de fora" fica vermelha em ~1 s, enquanto a API só o marca `NotReady` dezenas de
+  segundos depois. Mudanças de estado também aparecem no terminal (`◆ [nó] ...`).
 - **Marcas:** todo script de `chaos/` e `demos/` registra uma marca na sonda no momento
   em que injeta a falha (linha tracejada no painel). Para marcar à mão:
   `curl "localhost:8090/api/mark?label=meu+evento"`.

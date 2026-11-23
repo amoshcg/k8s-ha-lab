@@ -52,6 +52,21 @@ done
 try_sh "kubectl -n $NS get pods -o wide"
 pause
 "$ROOT/chaos/no.sh" unpause "$node"
+info "aguardando $node voltar (Ready=True e pods presos em Terminating removidos)"
+t0=$(date +%s)
+while :; do
+  el=$(($(date +%s) - t0))
+  rd=$(kubectl get node "$node" --request-timeout=3s -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || echo "?")
+  on=$(kubectl -n "$NS" get pods -l app=web --request-timeout=3s --no-headers \
+    --field-selector "spec.nodeName=$node" 2>/dev/null | awk '{printf "%s ", $3}')
+  printf 'T+%3ds  %s Ready=%-7s  pods no nó: %s\n' "$el" "$node" "$rd" "${on:-nenhum}"
+  [[ "$rd" == True && "$on" != *Terminating* ]] && break
+  ((el > 120)) && { warn "$node ainda não voltou ao normal após 120 s"; break; }
+  sleep 3
+done
+try kubectl get nodes
+ok "$node de volta"
+pause
 
 step "5/5 · O etcd perde o quórum: a API para, a aplicação não"
 victims=$(cp_nodes | grep -v -x "$(etcd_leader_node)" | head -n2)

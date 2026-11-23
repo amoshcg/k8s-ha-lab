@@ -24,6 +24,8 @@ TTY=-i
 # A sonda fala com o cluster pelos nomes dos contêineres na rede "kind":
 #   aplicação: NodePort 30080 do nó de entrada
 #   API:       o HAProxy que o kind coloca na frente dos 3 kube-apiservers
+#   nós:       kubelet (:10250) de cada nó e kube-apiserver (:6443) de cada
+#              control plane, diretamente (painel "Nós do cluster")
 API_URL="https://${CLUSTER}-external-load-balancer:6443"
 docker inspect "${CLUSTER}-external-load-balancer" >/dev/null 2>&1 ||
   API_URL="https://${CLUSTER}-control-plane:6443"   # cluster com um só control plane
@@ -37,4 +39,5 @@ exec docker run --rm $TTY --name "$PROBER_CONTAINER" --network kind \
   k8slab/prober:latest \
   -target "http://${ENTRY_NODE}:30080/" \
   -api-url "$API_URL" -api-token-file /lab/token -api-ca-file /lab/ca.crt \
+  -nodes "$(all_nodes | paste -sd, -)" \
   -label "$LABEL" "${@:2}"

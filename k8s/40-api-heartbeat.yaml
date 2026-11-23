@@ -41,3 +41,55 @@ subjects:
   - kind: ServiceAccount
     name: api-prober
     namespace: demo
+---
+# Painel de nós da sonda: somente leitura dos nós (condição Ready)...
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: api-prober-nodes
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: api-prober-nodes
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: api-prober-nodes
+subjects:
+  - kind: ServiceAccount
+    name: api-prober
+    namespace: demo
+---
+# ...dos static pods do plano de controle e das Leases de liderança.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: api-prober-control-plane
+  namespace: kube-system
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["list"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    resourceNames: ["kube-scheduler", "kube-controller-manager"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: api-prober-control-plane
+  namespace: kube-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: api-prober-control-plane
+subjects:
+  - kind: ServiceAccount
+    name: api-prober
+    namespace: demo
