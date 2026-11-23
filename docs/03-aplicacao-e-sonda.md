@@ -123,16 +123,4 @@ make probe                 # ou: make probe LABEL=falha-de-no
 - **Ctrl+C:** imprime e salva o resumo (`results/<rótulo>_<data>_resumo.txt`), com o
   efeito medido após cada marca. O CSV completo fica em `results/`.
 
-## 3.5 Organização dos terminais
-
-```
-┌──────────────────────────────┬──────────────────────────────┐
-│ T1: make probe               │ navegador: localhost:8090    │
-│ (linhas por segundo)         │ (painel)                     │
-├──────────────────────────────┼──────────────────────────────┤
-│ T2: make watch               │ T3: demos/00-apresentacao.sh │
-│ (nós, ReplicaSets, pods)     │ (onde você executa)          │
-└──────────────────────────────┴──────────────────────────────┘
-```
-
 Próximo: [4. Solução de problemas](04-problemas.md)
