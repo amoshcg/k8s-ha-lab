@@ -104,10 +104,6 @@ docs/           o guia passo a passo
 | execução reprodutível | `make up` (cria tudo do zero, com versões fixadas: kind v0.31.0, Kubernetes v1.35.0) |
 | métricas | disponibilidade, detecção, recuperação, latência p50/p95/p99 e vazão (k6): [docs/06-metricas.md](docs/06-metricas.md) |
 
-> O enunciado pede "preferencialmente `docker compose up`". Um cluster kind é criado
-> pelo próprio `kind` (que conversa com o Docker), por isso a entrada única aqui é
-> `make up`.
-
 ## Plataformas
 
 | Plataforma | Situação |
