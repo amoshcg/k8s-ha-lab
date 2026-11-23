@@ -117,7 +117,7 @@ docs/           o guia passo a passo
 | Windows 10/11 com Docker Desktop + WSL2 | rode os comandos dentro do Ubuntu do WSL2 |
 | Nuvem (uma VM Linux, ex.: EC2 com 2 vCPU e 8 GB) | mesmo procedimento do Linux; acesse o painel com `ssh -L 8090:localhost:8090` |
 
-## Limitações (importantes para o relatório)
+## Limitações
 
 - **Todos os "nós" dividem a mesma máquina.** Uma falha real de hardware, de disco ou
   de energia não é simulada. Latência entre nós é de microssegundos, irrealista para
